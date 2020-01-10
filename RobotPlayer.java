@@ -1,3 +1,4 @@
+// TAKEN FROM https://github.com/battlecode/battlecode20-scaffold/tree/master/src
 package examplefuncsplayer;
 import battlecode.common.*;
 
