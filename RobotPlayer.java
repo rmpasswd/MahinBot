@@ -1,10 +1,9 @@
 // TAKEN FROM https://github.com/battlecode/battlecode20-scaffold/tree/master/src
-package examplefuncsplayer;
+package battlecode_2020;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-
     static Direction[] directions = {
         Direction.NORTH,
         Direction.NORTHEAST,
@@ -19,6 +18,7 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
+    static MapLocation hqLoc=null;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -30,7 +30,6 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
-
         turnCount = 0;
 
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
@@ -66,9 +65,24 @@ public strictfp class RobotPlayer {
     static void runHQ() throws GameActionException {
         for (Direction dir : directions)
             tryBuild(RobotType.MINER, dir);
+
     }
 
     static void runMiner() throws GameActionException {
+        if(hqLoc == null){
+            //getting the miners search for hq location
+            System.out.println("lost in coordinates");
+            RobotInfo[] nearbybots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam());
+            for ( RobotInfo bot : nearbybots ){
+                if(bot.type == RobotType.HQ){
+                    hqLoc=bot.location;
+                    System.out.println("got the loc:_"+hqLoc);
+                }
+            }
+
+        }else{
+            System.out.println("ALREADY CALCULATED LOC: "+ hqLoc);
+        }
         // tryBlockchain();
         // tryMove(randomDirection());
         // if (tryMove(randomDirection()))
