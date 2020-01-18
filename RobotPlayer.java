@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static MapLocation hqLoc=null, souploc=null;
-    static Boolean designed=null;
+    static Boolean designed=false;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -72,9 +72,7 @@ public strictfp class RobotPlayer {
             for (Direction dir : directions)
                 tryBuild(RobotType.MINER, dir);
         }
-        if(designed.equals(false) && findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())) {
-            designed=true;
-        }
+
 
     }
 
@@ -92,19 +90,30 @@ public strictfp class RobotPlayer {
         }else{
             // System.out.println("ALREADY CALCULATED LOC: "+ hqLoc);
         }
+        // testing designed value:
+
         //ALSO BUILD A DESIGN SCHOOL opposite dir that of hqloc:
-        if(designed.equals(false) && !findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())) {
-                // if(rc.getLocation().translate(0,4))
+       if(designed==false){
+            if(!findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())){
                 if(rc.getLocation().distanceSquaredTo(hqLoc)>2){
                     if(tryBuild(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(hqLoc).opposite())){
                         designed=true;
                         System.out.println("BUILT DESIGN_SCHOOL ");
                     }
-                }
+                }else {
+                    System.out.println("DISTANCE MISMATCH TO DESIGN");
+                }  
+            }else {
+                designed=true;
+                System.out.println("somebody designed; true ");
             }
+       }else{
+        System.out.println("ALREADY TRUE");
+       }
+
         for(Direction dir: directions)
             if(tryRefine(dir)){
-                System.out.println("refining!");
+                // System.out.println("refining!");
             }else{
                 // System.out.println("can't refie");
             } // REFINING
@@ -120,7 +129,6 @@ public strictfp class RobotPlayer {
             if(souploc==null)
                 souploc=rc.getLocation();
             // System.out.println("free? :"+rc.canBuildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(hqLoc)));
-
              if(tryMove(rc.getLocation().directionTo(hqLoc)))
                 System.out.println("GOING FROM souploc "+souploc+"to hqLoc: "+hqLoc);
             else{
@@ -131,7 +139,7 @@ public strictfp class RobotPlayer {
             //IF BAG FULL GOTO HQ.^.
          }else{
             // IF ABLE TO GO TO SOUP_LOCATION
-            if(souploc!= null){
+            if(souploc!= null && rc.getSoupCarrying() != rc.getType().soupLimit){
                 if(tryMove(rc.getLocation().directionTo(souploc))){
                     System.out.println("gong to SOUP: " + souploc);
                 }else{ //OBSTACLE ON THE WAY TO SOUP ?
@@ -141,8 +149,7 @@ public strictfp class RobotPlayer {
                     tryMove(hqLoc.directionTo(souploc));
                     System.out.println("moved BEYOND_towards soup");
                 }
-            } 
-            else{
+            }else{
                 tryMove(randomDirection());
                 System.out.println("wandering randomly; BAG NOT FULL;SOUPLOC UNKNOWN");
             }
@@ -150,19 +157,6 @@ public strictfp class RobotPlayer {
 
          //IF SOUP LOCATION KNOWN AND BAG NOT FULL =\/
 
-        // tryBlockchain();
-        // tryMove(randomDirection());
-        // if (tryMove(randomDirection()))
-        //     System.out.println("I moved!");
-        // // tryBuild(randomSpawnedByMiner(), randomDirection());
-        // for (Direction dir : directions)
-        //     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-        // for (Direction dir : directions)
-        //     if (tryRefine(dir))
-        //         System.out.println("I refined soup! " + rc.getTeamSoup());
-        // for (Direction dir : directions)
-        //     if (tryMine(dir))
-        //         System.out.println("I mined soup! " + rc.getSoupCarrying());
     }//END OF RUNMINER()
 
     static void runRefinery() throws GameActionException {
@@ -231,7 +225,7 @@ public strictfp class RobotPlayer {
         RobotInfo[] bots = rc.senseNearbyRobots();
         for (RobotInfo bot : bots) {
             if(bot.type == targetbot && bot.team==side){
-                System.out.println("bot of INTENDED SIDE detected!"+targetbot+"!!RESPOND....");
+                System.out.println("bot of INTENDED SIDE detected!"+targetbot);
                 return true;
 
             }
