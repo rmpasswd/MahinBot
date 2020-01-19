@@ -3,7 +3,8 @@
 package MahinBot;
 import battlecode.common.*;
 import java.lang.Math;
-
+// import java.util.Arrays;
+// import java.util.IntSummaryStatistics;
 public strictfp class RobotPlayer {
     static RobotController rc;
     static Direction[] directions = {
@@ -68,7 +69,7 @@ public strictfp class RobotPlayer {
 
     static void runHQ() throws GameActionException {
         
-        if (turnCount < 10 || turnCount%100==0) {
+        if (turnCount < 20 || turnCount%100==0) {
             for (Direction dir : directions)
                 tryBuild(RobotType.MINER, dir);
         }
@@ -95,7 +96,8 @@ public strictfp class RobotPlayer {
         //ALSO BUILD A DESIGN SCHOOL opposite dir that of hqloc:
        if(designed==false){
             if(!findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())){
-                if(rc.getLocation().distanceSquaredTo(hqLoc)>2){
+                int d=rc.getLocation().distanceSquaredTo(hqLoc);
+                if(d>2 && d<=10){
                     if(tryBuild(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(hqLoc).opposite())){
                         designed=true;
                         System.out.println("BUILT DESIGN_SCHOOL ");
@@ -105,10 +107,10 @@ public strictfp class RobotPlayer {
                 }  
             }else {
                 designed=true;
-                System.out.println("somebody designed; true ");
+                System.out.println("somebody designed; setting_to_true ");
             }
        }else{
-        System.out.println("ALREADY TRUE");
+        // System.out.println("ALREADY TRUE");
        }
 
         for(Direction dir: directions)
@@ -136,7 +138,7 @@ public strictfp class RobotPlayer {
                                             // PLACE TO IMPLEMENT PATH FINDING TO HQ 
                                             // OR CLEARING THE PATH USING LANDSCAPERS.
             }
-            //IF BAG FULL GOTO HQ.^.
+            //vvvvvvvvvvvvvvvvvvvIF BAG NOT FULLvvvvvvvvvvvvvvvv
          }else{
             // IF ABLE TO GO TO SOUP_LOCATION
             if(souploc!= null && rc.getSoupCarrying() != rc.getType().soupLimit){
@@ -148,10 +150,19 @@ public strictfp class RobotPlayer {
                 if(rc.getLocation().equals(souploc)){
                     tryMove(hqLoc.directionTo(souploc));
                     System.out.println("moved BEYOND_towards soup");
+                    if(rc.senseSoup(rc.getLocation().add(hqLoc.directionTo(souploc)))==0){
+                        souploc=search4Soup(rc.getLocation());
+                        System.out.println("GOT A LOC FROM $100 FN");
+                    } //SENSING SOUP IF ADJACENT TILE CONTAINS NO SOUP;
                 }
             }else{
-                tryMove(randomDirection());
-                System.out.println("wandering randomly; BAG NOT FULL;SOUPLOC UNKNOWN");
+                if(tryMove(randomDirection())){
+                    System.out.println("wandering randomly; BAG NOT FULL;SOUPLOC UNKNOWN");
+                    if(turnCount>80){
+                        // souploc=search4Soup(rc.getLocation());
+                    }
+
+                }
             }
          }
 
@@ -204,27 +215,40 @@ public strictfp class RobotPlayer {
 
     }
 
-    /**
-     * Returns a random Direction.
-     *
-     * @return a random Direction
-     */
-    //code to search for a robot nearby.
+    static MapLocation search4Soup(MapLocation curloc){
+        MapLocation[] souplocs=rc.senseNearbySoup();     // SENSING WITH $100 FUNCTION!
+        if(souplocs.length==0){
+            MapLocation val=new MapLocation((rc.getMapWidth()/2),(rc.getMapHeight()/2));
+            System.out.println("souploc NONE");
+            return val;
+        }else{
+            int cp=0,temp=0,dst=10000;
+            for (int j=0; j<souplocs.length; j++) {
+                temp=curloc.distanceSquaredTo(souplocs[j]);
+                if(dst>temp){
+                    dst=temp;
+                    cp=j;
+                }
+            }
+            return souplocs[cp];
+        }
+
+    }
+
     static boolean findNearbyRobots(RobotType targetbot) throws GameActionException {
         RobotInfo[] bots = rc.senseNearbyRobots();
         for (RobotInfo bot : bots) {
             if(bot.type == targetbot){
                 System.out.println("detected!"+targetbot+"!!RESPOND....");
                 return true;
-
             }
         }
         return false;
     }
  static boolean findNearbyRobots(RobotType targetbot,Team side) throws GameActionException {
-        RobotInfo[] bots = rc.senseNearbyRobots();
+        RobotInfo[] bots = rc.senseNearbyRobots(-1,side);
         for (RobotInfo bot : bots) {
-            if(bot.type == targetbot && bot.team==side){
+            if(bot.type == targetbot){
                 System.out.println("bot of INTENDED SIDE detected!"+targetbot);
                 return true;
 
@@ -232,6 +256,11 @@ public strictfp class RobotPlayer {
         }
         return false;
     }
+      /**
+     * Returns a random Direction.
+     *
+     * @return a random Direction
+     */
     static Direction randomDirection() {
         return directions[(int) (Math.random() * directions.length)];
     }
