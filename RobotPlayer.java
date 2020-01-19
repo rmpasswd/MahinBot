@@ -45,6 +45,7 @@ public strictfp class RobotPlayer {
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
                 System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
+                findhq();
                 switch (rc.getType()) {
                     case HQ:                 runHQ();                break;
                     case MINER:              runMiner();             break;
@@ -78,19 +79,6 @@ public strictfp class RobotPlayer {
     }
 
     static void runMiner() throws GameActionException {
-        if(hqLoc == null){
-            //getting the miners search for hq location
-            RobotInfo[] nearbybots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam());
-            for ( RobotInfo bot : nearbybots ){
-                if(bot.type == RobotType.HQ){
-                    hqLoc=bot.location;
-                    // System.out.println("got the loc:_"+hqLoc);
-                }
-            }
-            System.out.println("cd: "+rc.getCooldownTurns());
-        }else{
-            // System.out.println("ALREADY CALCULATED LOC: "+ hqLoc);
-        }
         // testing designed value:
         //ALSO BUILD A DESIGN SCHOOL opposite dir that of hqloc:
        if(designed==false){
@@ -114,7 +102,7 @@ public strictfp class RobotPlayer {
 
         for(Direction dir: directions)
             if(tryRefine(dir)){
-                // System.out.println("refining!");
+                System.out.println("refining!_souploc:"+souploc);
             }else{
                 // System.out.println("can't refie");
             } // REFINING
@@ -126,9 +114,9 @@ public strictfp class RobotPlayer {
                 // System.out.println("Not mining");
             }
         if(rc.getSoupCarrying() == rc.getType().soupLimit){//IF BAG FULL GOTO HQ
+            // System.out.println("bag_full");
             if(souploc==null)
                 souploc=rc.getLocation();
-            // System.out.println("free? :"+rc.canBuildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(hqLoc)));
              if(tryMove(rc.getLocation().directionTo(hqLoc)))
                 System.out.println("GOING FROM souploc "+souploc+"to hqLoc: "+hqLoc);
             else{
@@ -143,14 +131,20 @@ public strictfp class RobotPlayer {
                 if(tryMove(rc.getLocation().directionTo(souploc))){
                     System.out.println("gong to SOUP: " + souploc);
                 }else{ //OBSTACLE ON THE WAY TO SOUP ?
-                    tryMove(randomDirection());
-                    System.out.println("OBSTACLE TO SOUP");
-                    souploc=null;
+                    if(tryMove(randomDirection())){
+                        System.out.println("moved randomly cuz souploc inaccessible!");
+                    }
                 }
                 if(rc.getLocation().equals(souploc)){
                     tryMove(hqLoc.directionTo(souploc));
                     System.out.println("moved BEYOND_towards soup");
-                    if(rc.senseSoup(rc.getLocation().add(hqLoc.directionTo(souploc)))==0){
+                    boolean canstillmine=false;
+                    for(Direction dir : directions) {
+                        if(rc.canMineSoup(dir)){
+                            canstillmine=true; break;
+                        }
+                    }
+                    if(!canstillmine){
                         souploc=search4Soup(rc.getLocation());
                         System.out.println("GOT A LOC FROM $100 FN");
                     } //SENSING SOUP IF ADJACENT TILE CONTAINS NO SOUP;
@@ -160,7 +154,7 @@ public strictfp class RobotPlayer {
             }else{
                 if(tryMove(randomDirection())){
                     System.out.println("wandering randomly; BAG NOT FULL;SOUPLOC UNKNOWN");
-                    if(been2mid==false turnCount>120){
+                    if(been2mid==false && turnCount>100){
                         souploc=search4Soup(rc.getLocation());
                         //SKEPTICAL about search4soup.
                     }
@@ -221,7 +215,21 @@ public strictfp class RobotPlayer {
     static void runNetGun() throws GameActionException {
 
     }
+    //888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
+    static void findhq() throws GameActionException{
+        if(hqLoc == null){
+            //getting the miners search for hq location
+            RobotInfo[] nearbybots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam());
+            for ( RobotInfo bot : nearbybots ){
+                if(bot.type == RobotType.HQ){
+                    hqLoc=bot.location;
+                    return;
+                }
+            }
+        }
 
+
+    }
     static MapLocation search4Soup(MapLocation curloc) throws GameActionException{
         MapLocation[] souplocs=rc.senseNearbySoup();     // SENSING WITH $100 FUNCTION!
         if(souplocs.length==0){
