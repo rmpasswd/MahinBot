@@ -21,9 +21,9 @@ public strictfp class RobotPlayer {
             RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
-    static int turnCount;
+    static int turnCount,dturn=0;
     static MapLocation hqLoc=null, souploc=null;
-    static Boolean designed=false;
+    static Boolean designed=false,been2mid=false;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -92,7 +92,6 @@ public strictfp class RobotPlayer {
             // System.out.println("ALREADY CALCULATED LOC: "+ hqLoc);
         }
         // testing designed value:
-
         //ALSO BUILD A DESIGN SCHOOL opposite dir that of hqloc:
        if(designed==false){
             if(!findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())){
@@ -126,7 +125,6 @@ public strictfp class RobotPlayer {
             }else{
                 // System.out.println("Not mining");
             }
-
         if(rc.getSoupCarrying() == rc.getType().soupLimit){//IF BAG FULL GOTO HQ
             if(souploc==null)
                 souploc=rc.getLocation();
@@ -146,6 +144,8 @@ public strictfp class RobotPlayer {
                     System.out.println("gong to SOUP: " + souploc);
                 }else{ //OBSTACLE ON THE WAY TO SOUP ?
                     tryMove(randomDirection());
+                    System.out.println("OBSTACLE TO SOUP");
+                    souploc=null;
                 }
                 if(rc.getLocation().equals(souploc)){
                     tryMove(hqLoc.directionTo(souploc));
@@ -154,12 +154,15 @@ public strictfp class RobotPlayer {
                         souploc=search4Soup(rc.getLocation());
                         System.out.println("GOT A LOC FROM $100 FN");
                     } //SENSING SOUP IF ADJACENT TILE CONTAINS NO SOUP;
+                }else {
+                    //IF SOUPLOC NOT EQ TO GETLOC.
                 }
             }else{
                 if(tryMove(randomDirection())){
                     System.out.println("wandering randomly; BAG NOT FULL;SOUPLOC UNKNOWN");
-                    if(turnCount>80){
-                        // souploc=search4Soup(rc.getLocation());
+                    if(been2mid==false turnCount>120){
+                        souploc=search4Soup(rc.getLocation());
+                        //SKEPTICAL about search4soup.
                     }
 
                 }
@@ -179,9 +182,13 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-        if(turnCount%100==0){
-            tryBuild(RobotType.LANDSCAPER,randomDirection());
-            
+        if(dturn<5){
+            if(tryBuild(RobotType.LANDSCAPER,randomDirection())){
+                System.out.println("build lscapers at dturn: "+dturn);
+                dturn++;
+            }            
+        }else{
+            System.out.println("enough designing");
         }
     }
 
@@ -215,11 +222,12 @@ public strictfp class RobotPlayer {
 
     }
 
-    static MapLocation search4Soup(MapLocation curloc){
+    static MapLocation search4Soup(MapLocation curloc) throws GameActionException{
         MapLocation[] souplocs=rc.senseNearbySoup();     // SENSING WITH $100 FUNCTION!
         if(souplocs.length==0){
             MapLocation val=new MapLocation((rc.getMapWidth()/2),(rc.getMapHeight()/2));
-            System.out.println("souploc NONE");
+            System.out.println("souploc NONE"); 
+            been2mid=true;
             return val;
         }else{
             int cp=0,temp=0,dst=10000;
