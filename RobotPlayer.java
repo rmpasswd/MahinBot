@@ -26,7 +26,7 @@ public strictfp class RobotPlayer {
     static int turnCount,dturn=0;
     static MapLocation hqLoc=null, souploc=null,dsLoc=null;
     static Boolean designed=false,been2mid=false,lcapinPos=false;
-    static ArrayList<MapLocation> loc2fill =new ArrayList<MapLocation>();
+    // static ArrayList<MapLocation> loc2fill =new ArrayList<MapLocation>();
     static ArrayList<Direction> digtiles =new ArrayList<Direction>();
     static ArrayList<MapLocation> pos2fill =new ArrayList<MapLocation>();
     // static ArrayList<Direction> dir2fill = new ArrayList<Direction>();
@@ -145,19 +145,24 @@ public strictfp class RobotPlayer {
                 }
                 if(rc.getLocation().equals(souploc)){
                     if(tryMove(hqLoc.directionTo(souploc))){
-                        tryMove(hqLoc.directionTo(souploc));
+                        tryMove(hqLoc.directionTo(souploc));    // just trying to go towards soup!
+                    }else {
+                        tryMove(randomDirection());
                     }
                     System.out.println("moved BEYOND_towards soup");
-                    boolean canstillmine=false;
-                    for(Direction dir : directions) {
-                        if(rc.canMineSoup(dir)){
-                            canstillmine=true; break;
-                        }
-                    }
-                    if(!canstillmine){
-                        souploc=search4Soup(rc.getLocation());   // // weakness : goes underwater!!
-                        System.out.println("GOT A LOC FROM $100 FN");
-                    } //SENSING SOUP IF ADJACENT TILE CONTAINS NO SOUP;
+                    souploc=null;
+                    // boolean canstillmine=false;
+                    // for(Direction dir : directions) {
+                    //     if(rc.canMineSoup(dir)){
+                    //         canstillmine=true; break;
+                    //     }
+                    // }
+                    // if(!canstillmine){
+                    //     souploc=search4Soup(rc.getLocation());   // // weakness : goes underwater!!
+                    //     System.out.println("GOT A LOC FROM $100 FN");
+                    // } 
+                    //SENSING SOUP IF ADJACENT TILE CONTAINS NO SOUP;
+
                 }else {
                     //IF SOUPLOC NOT EQ TO GETLOC.
                 }
@@ -266,7 +271,7 @@ public strictfp class RobotPlayer {
             }
         }else {
             if (turnCount>20) {
-                System.out.println("getting old but not in position.lcap and DESIGN_SCHOOL:");
+                System.out.println("getting old but not in position? :"+lcapinPos);
             }
         }
 
@@ -303,6 +308,7 @@ public strictfp class RobotPlayer {
                     lcapinPos=true; return;
                 }
             }
+            System.out.println("not ON ANY LOC");
             MapLocation togo=pos2fill.get(rndm.nextInt(pos2fill.size()));
             if(rc.canSenseLocation(togo)){
                 // System.out.println("togo_nearby: "+togo);
@@ -346,7 +352,7 @@ public strictfp class RobotPlayer {
                 }
             }
             // pos2fill=pos2fill;          
-            // System.out.println("pos2fill: "+pos2fill+"\npo2fill: "+pos2fill);  
+            System.out.println("pos2fill: "+pos2fill);  
         }else {
             // System.out.println("hqlocation still unknown or pos2fill full");
         }
@@ -390,7 +396,7 @@ public strictfp class RobotPlayer {
         RobotInfo[] bots = rc.senseNearbyRobots();
         for (RobotInfo bot : bots) {
             if(bot.type == targetbot){
-                System.out.println("detected!"+targetbot+"!!RESPOND....");
+                // System.out.println("detected!"+targetbot+"!!RESPOND....");
                 return true;
             }
         }
@@ -400,7 +406,7 @@ public strictfp class RobotPlayer {
         RobotInfo[] bots = rc.senseNearbyRobots(-1,side);
         for (RobotInfo bot : bots) {
             if(bot.type == targetbot){
-                System.out.println("bot of INTENDED SIDE detected!"+targetbot);
+                // System.out.println("bot of INTENDED SIDE detected!"+targetbot);
                 return true;
 
             }
