@@ -3,7 +3,9 @@
 package MahinBot;
 import battlecode.common.*;
 import java.lang.Math;
-// import java.util.Arrays;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Random;
 // import java.util.IntSummaryStatistics;
 public strictfp class RobotPlayer {
     static RobotController rc;
@@ -22,9 +24,14 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount,dturn=0;
-    static MapLocation hqLoc=null, souploc=null;
-    static Boolean designed=false,been2mid=false;
-
+    static MapLocation hqLoc=null, souploc=null,dsLoc=null;
+    static Boolean designed=false,been2mid=false,lcapinPos=false;
+    static ArrayList<MapLocation> loc2fill =new ArrayList<MapLocation>();
+    static ArrayList<Direction> digtiles =new ArrayList<Direction>();
+    static ArrayList<MapLocation> pos2fill =new ArrayList<MapLocation>();
+    // static ArrayList<Direction> dir2fill = new ArrayList<Direction>();
+    static Direction[] dir2fill = new Direction[3];
+    static Random rndm = new Random();
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -36,6 +43,7 @@ public strictfp class RobotPlayer {
         // and to get information on its current status.
         RobotPlayer.rc = rc;
         turnCount = 0;
+        dturn=0;
 
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
         while (true) {
@@ -80,26 +88,26 @@ public strictfp class RobotPlayer {
 
     static void runMiner() throws GameActionException {
         // testing designed value:
-        //ALSO BUILD A DESIGN SCHOOL opposite dir that of hqloc:
-       if(designed==false){
-            if(!findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())){
-                int d=rc.getLocation().distanceSquaredTo(hqLoc);
-                if(d>2 && d<=10){
-                    if(tryBuild(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(hqLoc).opposite())){
-                        designed=true;
-                        System.out.println("BUILT DESIGN_SCHOOL ");
-                    }
-                }else {
-                    System.out.println("DISTANCE MISMATCH TO DESIGN");
-                }  
-            }else {
-                designed=true;
-                System.out.println("somebody designed; setting_to_true ");
-            }
-       }else{
-        // System.out.println("ALREADY TRUE");
-       }
+        //ALSO BUILD A DESIGN SCHOOL opposite dir that of hqlocation:
 
+       if(designed==false){
+            if(findNearbyRobots(RobotType.LANDSCAPER,rc.getTeam()))
+                designed=true;
+            else if(!findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())){
+                int d=rc.getLocation().distanceSquaredTo(hqLoc);
+                if(d<10){
+                    if(tryBuild(RobotType.DESIGN_SCHOOL,randomDirection())){
+                         designed=true;
+                         // System.out.println("BUILT DESIGN_SCHOOL ");
+                     }
+                }else {
+                    System.out.println("TO FAR TO DESIGN");
+                }
+            }else{
+                designed=true;
+                System.out.println("alrdy designed; setting2TRUE");
+             }
+         }
         for(Direction dir: directions)
             if(tryRefine(dir)){
                 System.out.println("refining!_souploc:"+souploc);
@@ -132,11 +140,13 @@ public strictfp class RobotPlayer {
                     System.out.println("gong to SOUP: " + souploc);
                 }else{ //OBSTACLE ON THE WAY TO SOUP ?
                     if(tryMove(randomDirection())){
-                        System.out.println("moved randomly cuz souploc inaccessible!");
+                        // System.out.println("moved randomly cuz trymove/souploc inaccessible!");
                     }
                 }
                 if(rc.getLocation().equals(souploc)){
-                    tryMove(hqLoc.directionTo(souploc));
+                    if(tryMove(hqLoc.directionTo(souploc))){
+                        tryMove(hqLoc.directionTo(souploc));
+                    }
                     System.out.println("moved BEYOND_towards soup");
                     boolean canstillmine=false;
                     for(Direction dir : directions) {
@@ -145,7 +155,7 @@ public strictfp class RobotPlayer {
                         }
                     }
                     if(!canstillmine){
-                        souploc=search4Soup(rc.getLocation());
+                        souploc=search4Soup(rc.getLocation());   // // weakness : goes underwater!!
                         System.out.println("GOT A LOC FROM $100 FN");
                     } //SENSING SOUP IF ADJACENT TILE CONTAINS NO SOUP;
                 }else {
@@ -154,9 +164,11 @@ public strictfp class RobotPlayer {
             }else{
                 if(tryMove(randomDirection())){
                     System.out.println("wandering randomly; BAG NOT FULL;SOUPLOC UNKNOWN");
-                    if(been2mid==false && turnCount>100){
+                    if(been2mid==false && turnCount>15){
                         souploc=search4Soup(rc.getLocation());
                         //SKEPTICAL about search4soup.
+                    }else {
+                        // System.out.println("been2mid: "+been2mid+"turnCount: "+turnCount);
                     }
 
                 }
@@ -176,14 +188,18 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-        if(dturn<5){
+        prepPos();
+        if(dturn<pos2fill.size()){
             if(tryBuild(RobotType.LANDSCAPER,randomDirection())){
-                System.out.println("build lscapers at dturn: "+dturn);
+                // System.out.println("build lscapers at dturn: "+dturn+" and pos2fill: "+pos2fill.size());
                 dturn++;
             }            
         }else{
-            System.out.println("enough designing");
+            System.out.println("RIP me");
+            rc.disintegrate();
         }
+
+
     }
 
     static void runFulfillmentCenter() throws GameActionException {
@@ -192,6 +208,67 @@ public strictfp class RobotPlayer {
     }
 
     static void runLandscaper() throws GameActionException {
+        prepPos();
+        while(!lcapinPos){
+            checkPos();
+        }
+        if(lcapinPos && !findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam())){  //IN POSITION.
+            System.out.println(lcapinPos+"and"+!findNearbyRobots(RobotType.DESIGN_SCHOOL,rc.getTeam()));
+
+            MapLocation currentLocation= rc.getLocation();
+            if(dir2fill[0]==null){
+                dir2fill[0]=currentLocation.directionTo(currentLocation);
+                Direction dto=currentLocation.directionTo(hqLoc);
+                if(dto.toString().length()>5){
+                    dir2fill[1]=dto.rotateRight();
+                    dir2fill[2]=dto.rotateLeft();
+                }else {
+                    dir2fill[1]=dto.rotateRight().rotateRight();
+                    dir2fill[2]=dto.rotateLeft().rotateLeft();
+                }
+                System.out.println(dir2fill);
+            }
+            // if(loc2fill.isEmpty()){
+            //     MapLocation currentLocation= rc.getLocation();
+            //     Direction dto=currentLocation.directionTo(hqLoc);
+            //     loc2fill.add(currentLocation);    
+            //     if(dto.toString().length()>5){
+            //         loc2fill.add(currentLocation.add(dto.rotateRight()));
+            //         loc2fill.add(currentLocation.add(dto.rotateLeft()));
+            //     }else {
+            //         loc2fill.add(currentLocation.add(dto.opposite()));
+            //         loc2fill.add(currentLocation.add(dto));
+            //     }
+            // }
+            if(digtiles.isEmpty()){
+                digtiles.addAll(Arrays.asList(directions));    digtiles.remove(dir2fill[1]);   digtiles.remove(dir2fill[2]);
+            }
+            if(rc.getDirtCarrying()!=0){
+                int minEl=9999,curEl=0; 
+                Direction runningDir=null; 
+                // Direction[] itover = dir2fill.toArray(); 
+
+                for (Direction dir : dir2fill) {
+                    curEl=rc.senseElevation(currentLocation.add(dir));
+                    if(minEl>curEl){
+                        minEl=curEl;
+                        runningDir=dir; //////// this caused error so changed dir2fill to array.
+                    }
+                }
+                System.out.println("the tile to dump dirt: "+runningDir);
+                if(rc.canDepositDirt(runningDir)){
+                    rc.depositDirt(runningDir);
+                }
+            }else {  // IF NO DIRT CARRYING.
+                System.out.println("DIGGIN FROM "+digtiles);
+                Direction dir=digtiles.get(rndm.nextInt(digtiles.size()));
+                tryDig(dir);
+            }
+        }else {
+            if (turnCount>20) {
+                System.out.println("getting old but not in position.lcap and DESIGN_SCHOOL:");
+            }
+        }
 
     }
 
@@ -216,6 +293,64 @@ public strictfp class RobotPlayer {
 
     }
     //888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
+    static void checkPos() throws GameActionException{
+        if(!pos2fill.isEmpty()){
+            MapLocation currentLocation=rc.getLocation();
+            for (MapLocation ml : pos2fill) {
+                if(currentLocation.equals(ml)){                
+                    // MapLocation todel= new MapLocation();    
+                    pos2fill.remove(new MapLocation(ml.x,ml.y));
+                    lcapinPos=true; return;
+                }
+            }
+            MapLocation togo=pos2fill.get(rndm.nextInt(pos2fill.size()));
+            if(rc.canSenseLocation(togo)){
+                // System.out.println("togo_nearby: "+togo);
+                RobotInfo rb=rc.senseRobotAtLocation(togo);
+                if(rb!=null){
+                    if(rb.type==RobotType.LANDSCAPER && rb.team==rc.getTeam()){
+                        pos2fill.remove(new MapLocation(togo.x,togo.y));
+                        checkPos();// if already occ. by another lscaper
+                        return;
+                            //dont doooooooooooooooooo this! pos2fill.remove(new MapLocation(togo));
+                    }else if(rb.type==RobotType.DESIGN_SCHOOL && pos2fill.size()==1){
+                        // System.out.println("DESIGN SCHOOL GETTING IN THE WAY...");
+                        
+                    }else { //IF TOGO is not a landscaper and design_school.
+                        if(!tryMove(currentLocation.directionTo(togo))){
+                            tryMove(randomDirection());
+                        }
+                    }                    
+                }else { // IF THE TILE IS EMPTY 
+                    if(!tryMove(currentLocation.directionTo(togo))){
+                            if(!tryMove(hqLoc.directionTo(togo)))
+                                tryMove(randomDirection()); // todo: need to tweak this.// update: how's this?
+
+                            // System.out.println("can't go but will go");
+                    }
+                }
+
+            }else { // IF TOGO IS NOT WITHIN SENSOR
+                if(!tryMove(currentLocation.directionTo(togo))){
+                    tryMove(randomDirection());
+                }
+            }
+        }
+    }
+    static void prepPos() throws GameActionException{
+        if(pos2fill.isEmpty()){
+            for (Direction dir : directions) {
+                MapLocation temp=hqLoc.add(dir).add(dir);
+                if(rc.onTheMap(temp)){
+                    pos2fill.add(temp);
+                }
+            }
+            // pos2fill=pos2fill;          
+            // System.out.println("pos2fill: "+pos2fill+"\npo2fill: "+pos2fill);  
+        }else {
+            // System.out.println("hqlocation still unknown or pos2fill full");
+        }
+    }
     static void findhq() throws GameActionException{
         if(hqLoc == null){
             //getting the miners search for hq location
@@ -234,7 +369,7 @@ public strictfp class RobotPlayer {
         MapLocation[] souplocs=rc.senseNearbySoup();     // SENSING WITH $100 FUNCTION!
         if(souplocs.length==0){
             MapLocation val=new MapLocation((rc.getMapWidth()/2),(rc.getMapHeight()/2));
-            System.out.println("souploc NONE"); 
+            System.out.println("souploc NONE"); // weakness : goes underwater!!
             been2mid=true;
             return val;
         }else{
@@ -289,7 +424,21 @@ public strictfp class RobotPlayer {
     static RobotType randomSpawnedByMiner() {
         return spawnedByMiner[(int) (Math.random() * spawnedByMiner.length)];
     }
-
+    static boolean tryDig() throws GameActionException {
+        Direction dir= randomDirection();
+        if (rc.canDigDirt(dir)){
+            rc.digDirt(dir);
+            return true;
+        }
+        return false;
+    }
+    static boolean tryDig(Direction dir) throws GameActionException {
+        if (rc.canDigDirt(dir)){
+            rc.digDirt(dir);
+            return true;
+        }
+        return false;
+    }    
     static boolean tryMove() throws GameActionException {
         for (Direction dir : directions)
             if (tryMove(dir))
