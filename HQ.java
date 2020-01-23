@@ -9,11 +9,14 @@ public class HQ extends Netgun
     public HQ ( RobotController r ) throws GameActionException
     {
         super(r);
-        // comms.broadcastLoc(rc.getLocation());
+        comms.broadcastLoc(r.getLocation(),5);
+
     }
 
     public void takeTurn() throws GameActionException
     {
+        super.takeTurn();
+        System.out.println("i hq at turn: "+turnCount);
         if(turnCount==1){
             comms.broadcastLoc(hqLoc,5);
         }

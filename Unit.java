@@ -6,7 +6,6 @@ public class Unit extends Robot
 {
 
     Navigation nav ;
-    Robot rb;
     public Unit( RobotController r )
     {
         super(r);

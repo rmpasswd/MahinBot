@@ -7,14 +7,16 @@ public class Robot
 	public static MapLocation hqLoc=null,souploc=null;
 	RobotController rc;
 	Communications comms;
+	int turnCount = 0 ;
+
+
     Random rndm = new Random();
 	public Robot ( RobotController r )
 	{
 		this.rc = r ;
-		// comms = new Communications( rc ) ;
+		 comms = new Communications( rc ) ;
 	}
 
-	int turnCount = 0 ;
 
 	public void takeTurn() throws GameActionException
 	{
